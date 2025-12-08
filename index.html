@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MREN 318 Quizlet</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #7c3aed; /* Purple for AI */
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            width: 100%;
+            padding: 1rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        button.nav-btn {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.nav-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        main {
+            width: 90%;
+            max-width: 600px;
+            flex: 1;
+            padding-bottom: 2rem;
+        }
+
+        /* Flashcard Styles */
+        .flashcard-container {
+            perspective: 1000px;
+            height: 340px; /* Taller for AI buttons */
+            cursor: pointer;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .front, .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            box-sizing: border-box;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .back {
+            background-color: #eff6ff;
+            transform: rotateY(180deg);
+            color: var(--primary-dark);
+        }
+
+        /* AI Button Styles */
+        .ai-btn {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        
+        .ai-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .ai-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+
+        .control-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* Quiz Styles */
+        .quiz-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .option-btn:hover {
+            background-color: #f9fafb;
+        }
+
+        .option-btn.correct {
+            background-color: #dcfce7;
+            border-color: #22c55e;
+            color: #14532d;
+        }
+
+        .option-btn.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #7f1d1d;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .score-display {
+            font-size: 1.25rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        /* AI Response Area */
+        .ai-response-box {
+            background: #fdf4ff; /* Light purple bg */
+            border: 1px solid #d8b4fe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            text-align: left;
+            color: #4c1d95;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loading-dots:after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+
+        /* Test Mode Styles */
+        .test-input-area {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-top: 1rem;
+        }
+
+        .test-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-top: 10px;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .test-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .submit-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+            width: 100%;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .feedback-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            animation: fadeIn 0.5s;
+        }
+
+        .feedback-box.correct {
+            background: #dcfce7;
+            border: 2px solid #22c55e;
+            color: #14532d;
+        }
+
+        .feedback-box.incorrect {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            color: #7f1d1d;
+        }
+
+        .feedback-box.partial {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            color: #78350f;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>MREN 318 Study App</h1>
+    <p style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">Powered by Yo Mama ✨</p>
+</header>
+
+<nav>
+    <button class="nav-btn active" onclick="switchMode('flashcards')">Flashcards</button>
+    <button class="nav-btn" onclick="switchMode('quiz')">Quiz Mode</button>
+    <button class="nav-btn" onclick="switchMode('test')">Test Mode</button>
+</nav>
+
+<!-- FLASHCARD MODE -->
+<main id="flashcard-mode">
+    <div class="score-display">Card <span id="current-card-num">1</span> of <span id="total-cards"></span></div>
+    
+    <div class="flashcard-container">
+        <div class="flashcard" id="flashcard" onclick="flipCard(event)">
+            <div class="front">
+                <h2 id="card-front">Question</h2>
+                <p style="color: #6b7280; margin-top: 1rem; font-size: 0.9rem;">(Tap to flip)</p>
+            </div>
+            <div class="back">
+                <h2 id="card-back">Answer</h2>
+                
+                <!-- AI Buttons on Flashcard Back -->
+                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;" onclick="event.stopPropagation()">
+                    <button class="ai-btn" onclick="speakCard()">
+                        🔊 Listen
+                    </button>
+                    <button class="ai-btn" onclick="getAIExample()">
+                        ✨ Real World Example
+                    </button>
+                </div>
+                
+                <div id="flashcard-ai-output" class="ai-response-box hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="prevCard()">Previous</button>
+        <button class="control-btn" onclick="nextCard()">Next</button>
+    </div>
+</main>
+
+<!-- QUIZ MODE -->
+<main id="quiz-mode" class="hidden">
+    <div class="score-display">Score: <span id="score">0</span> / <span id="total-quiz"></span></div>
+    <div id="quiz-container">
+        <!-- Quiz items injected here -->
+    </div>
+    <button class="control-btn" style="width:100%; margin-top:20px;" onclick="resetQuiz()">Shuffle & Restart Quiz</button>
+</main>
+
+<!-- TEST MODE -->
+<main id="test-mode" class="hidden">
+    <div class="score-display">Question <span id="test-current">1</span> of <span id="test-total"></span> | Score: <span id="test-score">0</span></div>
+    
+    <div class="test-input-area">
+        <h3 id="test-question" style="margin-top: 0;">Question</h3>
+        <textarea id="test-answer-input" class="test-input" placeholder="Type your answer here..."></textarea>
+        <button class="submit-btn" onclick="checkTestAnswer()">Submit Answer</button>
+        <div id="test-feedback" class="hidden"></div>
+    </div>
+
+    <div class="controls" style="margin-top: 1.5rem;">
+        <button class="control-btn" onclick="prevTestQuestion()">Previous</button>
+        <button class="control-btn" onclick="nextTestQuestion()">Next</button>
+    </div>
+    
+    <button class="control-btn" style="width:100%; margin-top:20px;" onclick="resetTest()">Restart Test</button>
+</main>
+
+<!-- Load API configuration -->
+<script src="config.js"></script>
+
+<script>
+    // --- GEMINI API SETUP ---
+    const apiKey = (typeof CONFIG !== 'undefined' && CONFIG.GEMINI_API_KEY) || ""; // Load from config.js
+
+    // Helper: Delay for backoff
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Helper: Generic API Call with Retries
+    async function callGeminiAPI(prompt, isTTS = false) {
+        if (!apiKey) {
+            alert("API Key missing! The AI features won't work in this specific preview without a key.");
+            return null;
+        }
+
+        const model = isTTS ? "gemini-2.5-flash-preview-tts" : "gemini-2.5-flash-preview-09-2025";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        let payload;
+        
+        if (isTTS) {
+             payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: "Kore" }
+                        }
+                    }
+                }
+            };
+        } else {
+            payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+        }
+
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+        const delays = [1000, 2000, 4000, 8000, 16000];
+        
+        for (let i = 0; i <= 5; i++) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.status === 429) {
+                    if (i < 5) {
+                        await delay(delays[i]);
+                        continue; 
+                    }
+                }
+
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                const data = await response.json();
+                return data;
+
+            } catch (error) {
+                if (i === 5) {
+                    console.error("Yo Mama API Error:", error);
+                    return null;
+                }
+            }
+        }
+    }
+
+    // Feature 1: TTS
+    async function speakCard() {
+        const text = data[currentCard].q + " ... The answer is ... " + data[currentCard].a;
+        const btn = document.querySelector('.back .ai-btn'); // Target the speak button
+        const originalText = btn.innerText;
+        btn.innerText = "🔊 Generating...";
+        btn.disabled = true;
+
+        const result = await callGeminiAPI(text, true);
+
+        if (result && result.candidates && result.candidates[0].content.parts[0].inlineData) {
+            const audioData = result.candidates[0].content.parts[0].inlineData.data;
+            const audio = new Audio("data:audio/mp3;base64," + audioData); // Note: API returns raw PCM usually but simplified for this demo context
+            // Actually, the new TTS model returns 'audio/wav' or similar in inlineData. 
+            // We need to check mimeType. If it's pure PCM, we might need a wav header.
+            // For simplicity in this demo, let's assume standard behavior or try basic playback.
+            // The preview environment handles this specifically.
+            
+            // Fallback for standard browser TTS if API fails or format is tricky in raw JS without libs
+             if (result.candidates[0].content.parts[0].inlineData.mimeType === "audio/wav") {
+                 const wavAudio = new Audio(`data:audio/wav;base64,${audioData}`);
+                 wavAudio.play();
+             } else {
+                // PCM fallback or simply use browser TTS as backup if API complexity is high for single file
+                const utterance = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.speak(utterance);
+             }
+        } else {
+            // Fallback to browser TTS if API fails
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+
+    // Feature 2: Explain Concept (Flashcard)
+    async function getAIExample() {
+        const card = data[currentCard];
+        const prompt = `You are an engineering tutor. Provide a specific, interesting real-world engineering application or example for this concept: "${card.a}" related to the question "${card.q}". Keep it under 2 sentences.`;
+        
+        const outputDiv = document.getElementById('flashcard-ai-output');
+        outputDiv.classList.remove('hidden');
+        outputDiv.innerHTML = '<span class="loading-dots">Consulting Yo Mama</span>';
+
+        const result = await callGeminiAPI(prompt, false);
+        
+        if (result && result.candidates) {
+            const aiText = result.candidates[0].content.parts[0].text;
+            outputDiv.innerText = "✨ " + aiText;
+        } else {
+            outputDiv.innerText = "Error contacting AI. Try again.";
+        }
+    }
+
+    // Feature 3: Explain Answer (Quiz)
+    async function explainQuizAnswer(btn, question, answer, correct) {
+        const cardDiv = btn.parentElement;
+        // Create or find response box
+        let responseBox = cardDiv.querySelector('.ai-response-box');
+        if (!responseBox) {
+            responseBox = document.createElement('div');
+            responseBox.className = 'ai-response-box';
+            cardDiv.appendChild(responseBox);
+        }
+
+        btn.disabled = true;
+        btn.innerText = "✨ Thinking...";
+        responseBox.innerHTML = '<span class="loading-dots">Analyzing Circuit Logic</span>';
+
+        const prompt = `You are an engineering professor. Explain briefly why "${correct}" is the correct answer to "${question}". If relevant, explain why "${answer}" is wrong (if they picked a wrong one). Keep it clear and concise.`;
+
+        const result = await callGeminiAPI(prompt, false);
+
+        if (result && result.candidates) {
+            responseBox.innerText = "✨ " + result.candidates[0].content.parts[0].text;
+        } else {
+            responseBox.innerText = "Could not retrieve explanation.";
+        }
+        
+        btn.innerText = "✨ Explain Answer";
+        btn.disabled = false;
+    }
+
+    // --- DATA & APP LOGIC ---
+
+    const initialData = [
+        // --- QUIZ 1 ---
+        { q: "What makes an active sensor different from a passive sensor?", a: "Active sensors transmit a signal outward to make a measurement.", options: ["An active sensor is ON all the time.", "Active sensors are more accurate.", "Active sensors transmit a signal outward to make a measurement.", "Passive sensors are less expensive."] },
+        { q: "What is resistivity?", a: "It defines how resistive a material is.", options: ["It is the resistance of a specific resistor.", "It tells us the resistance of a potentiometer.", "It is the accuracy of a potentiometer.", "It defines how resistive a material is."] },
+        { q: "What is a major drawback to non-contact sensors?", a: "They are susceptible to interference more than contact sensors.", options: ["They are susceptible to interference more than contact sensors.", "They experience considerable wear.", "They are less accurate.", "They are incredibly expensive."] },
+        { q: "How does hysteresis affect a sensor's output?", a: "Measurements in one direction may be different than measurements in the opposite direction.", options: ["Measurements are all offset by a fixed amount.", "Measurements in one direction may be different than measurements in the opposite direction.", "Measurements are affected by a random error.", "Outputs are not directly related with stimulus."] },
+        { q: "Which of the following is used to create the active elements of an ultrasonic transmitter?", a: "Piezoelectric membrane.", options: ["Dialectric materials.", "Metal shield.", "Piezoelectric membrane.", "Resistive element."] },
+        { q: "What is the Binary representation of the Gray code 101011?", a: "110010", options: ["010010", "110010", "111010", "001101"] },
+        { q: "How do ESD protection diodes work?", a: "They repel static electricity using magnetic fields.", options: ["They repel static electricity using magnetic fields.", "They block current flow.", "They reverse bias during high voltage events and direct current away from sensitive electronics.", "They convert excess energy into heat."] },
+        { q: "What is the working principle of an infrared proximity sensor?", a: "Variations in distance are measured by positions on a sensing device.", options: ["Wavelength shifts.", "Radiated heat strength.", "Time of flight.", "Variations in distance are measured by positions on a sensing device."] },
+        { q: "How can you convert an analog Hall sensor output into a digital signal?", a: "Both Thresholding and Schmitt trigger.", options: ["Thresholding in software.", "Build a circuit with a Schmitt trigger.", "Both Thresholding and Schmitt trigger.", "None of the above."] },
+        { q: "Which direction does the Hall effect occur relative to the flow of current and the magnetic field?", a: "Perpendicular to both.", options: ["Opposite the magnetic field.", "Same direction of current flow.", "Parallel to both.", "Perpendicular to both."] },
+        
+        // --- QUIZ 2 ---
+        { q: "How are resonant frequencies related to the fundamental frequency of a vibrating piezoelectric crystal?", a: "They are integer multiples of the fundamental frequency.", options: ["They are half-integer multiples.", "They are independent of the fundamental.", "They are all the same as the fundamental.", "They are integer multiples of the fundamental frequency."] },
+        { q: "What capacitive touch sensor configuration is needed for multi-touch sensing?", a: "Mutual capacitance.", options: ["Self-capacitance.", "Mutual capacitance.", "Resistive.", "Inductive."] },
+        { q: "What is a key element of a pressure sensor?", a: "A diaphragm.", options: ["A diaphragm.", "A proof mass.", "A piezoelectric crystal.", "A hot wire."] },
+        { q: "Why do we use pitot tubes to measure fluid velocity?", a: "They measure stagnation pressure directly.", options: ["They are easiest to manufacture.", "They are the most aerodynamic.", "They measure stagnation pressure directly.", "They work in a vacuum."] },
+        { q: "What is the concept behind thermal transport sensing?", a: "Measuring changes in heat transfer due to fluid flow.", options: ["Measuring changes in fluid density.", "Measuring changes in fluid pressure.", "Measuring changes in viscosity.", "Measuring changes in heat transfer due to fluid flow."] },
+        { q: "What is the purpose of a proof mass in an accelerometer?", a: "It provides a known mass for acceleration to force conversion.", options: ["It protects the sensor from damage.", "It provides a known mass for acceleration to force conversion.", "It proves that the sensor is working correctly.", "It holds the system together."] },
+        { q: "How does a Wheatstone bridge help with sensor measurements?", a: "All of the above.", options: ["Increases sensitivity.", "Cancels temperature effects.", "Converts resistance to voltage.", "All of the above."] },
+        { q: "How do we use a wire strain gauge to measure strain?", a: "By measuring changes in resistance due to deformation.", options: ["Measuring changes in capacitance.", "Measuring changes in resistance due to deformation.", "Measuring changes in inductance.", "Measuring changes in Magnetic field."] },
+        { q: "What is the purpose of using a biaxial or rosette strain gauge?", a: "To measure strain in multiple directions.", options: ["Increase sensitivity.", "Reduce noise.", "To measure strain in multiple directions.", "Measure temperature changes."] },
+        { q: "Why is a charge amplifier required in piezoelectric sensors?", a: "To convert charge to a usable voltage signal.", options: ["To convert charge to a usable voltage signal.", "To amplify the voltage signal.", "To filter out noise.", "To provide power."] },
+        
+        // --- QUIZ 3 ---
+        { q: "Why are ferromagnetic materials used in magnetic circuits?", a: "They have high permeability.", options: ["High electrical conductivity.", "Lightweight.", "They have high permeability.", "Non-magnetic."] },
+        { q: "What is a B-H curve?", a: "The nonlinear relationship between magnetic flux density and magnetic field intensity.", options: ["Shape of the stator.", "The nonlinear relationship between magnetic flux density and magnetic field intensity.", "Grading scheme.", "Windings chart."] },
+        { q: "What is the magnetic equivalent of electric current in a circuit?", a: "Magnetic flux.", options: ["Magnetic current.", "Magnetomotive force.", "Permeability of free space.", "Magnetic flux."] },
+        { q: "A coil with 500 turns carries a current of 0.2 A. What is the magnetomotive force (MMF)?", a: "100 A-t", options: ["4π A-t", "100 A-t", "2500 A-t", "0.4 A-t"] },
+        { q: "A wire is coiled around a rod of material (μr = 3). If the core is removed, what happens to the flux?", a: "It decreases by a factor of 3.", options: ["Increases by factor of 3.", "Remains the same.", "It decreases by a factor of 3.", "Becomes zero."] },
+        { q: "Why is the reluctance of an air gap typically high?", a: "Air has low magnetic permeability.", options: ["Air has low magnetic permeability.", "Air has high conductivity.", "Air increases area.", "Fields cannot move through air."] },
+        { q: "What is the goal of a generator?", a: "Convert mechanical energy into electrical energy.", options: ["Convert electrical to thermal.", "Convert electrical to mechanical.", "Convert mechanical energy into electrical energy.", "Store electrical energy."] },
+        { q: "In a DC motor, what is the purpose of the commutator?", a: "To reverse the current direction in the armature windings.", options: ["Increase speed.", "Mechanical support.", "Reverse field direction.", "To reverse the current direction in the armature windings."] },
+        { q: "Which of the following is NOT a common type of DC motor?", a: "Induction DC Motor", options: ["Shunt DC Motor.", "Series DC Motor.", "Induction DC Motor", "Permanent Magnet DC Motor."] },
+        { q: "What is 'back EMF' in a DC motor?", a: "The voltage generated by the motor opposing the applied voltage.", options: ["The voltage generated by the motor opposing the applied voltage.", "Voltage applied to motor.", "Current flowing through motor.", "Mechanical torque produced."] }
+    ];
+
+    let data = [...initialData];
+    let currentCard = 0;
+    let quizScore = 0;
+    let testScore = 0;
+    let testAnswers = []; // Track which questions have been answered
+
+    const totalCards = document.getElementById('total-cards');
+    const currentCardNum = document.getElementById('current-card-num');
+    const flashcard = document.getElementById('flashcard');
+    const cardFront = document.getElementById('card-front');
+    const cardBack = document.getElementById('card-back');
+    const flashcardAI = document.getElementById('flashcard-ai-output');
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function initApp() {
+        shuffleArray(data);
+        totalCards.textContent = data.length;
+        document.getElementById('total-quiz').textContent = data.length;
+        document.getElementById('test-total').textContent = data.length;
+        
+        if(!document.getElementById('flashcard-mode').classList.contains('hidden')) {
+            updateCard();
+        } else {
+            renderQuiz();
+        }
+    }
+
+    function switchMode(mode) {
+        document.getElementById('flashcard-mode').classList.add('hidden');
+        document.getElementById('quiz-mode').classList.add('hidden');
+        document.getElementById('test-mode').classList.add('hidden');
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        
+        if(mode === 'flashcards') {
+            document.getElementById('flashcard-mode').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            updateCard();
+        } else if(mode === 'quiz') {
+            document.getElementById('quiz-mode').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn')[1].classList.add('active');
+            renderQuiz();
+        } else if(mode === 'test') {
+            document.getElementById('test-mode').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn')[2].classList.add('active');
+            updateTestQuestion();
+        }
+    }
+
+    function updateCard() {
+        flashcard.classList.remove('flipped');
+        flashcardAI.classList.add('hidden'); // Hide AI response when changing cards
+        flashcardAI.innerText = ""; 
+        setTimeout(() => {
+            cardFront.textContent = data[currentCard].q;
+            cardBack.textContent = data[currentCard].a;
+            currentCardNum.textContent = currentCard + 1;
+        }, 200);
+    }
+
+    function flipCard(event) {
+        // Prevent flip if clicking AI buttons
+        if(event.target.tagName === 'BUTTON') return;
+        flashcard.classList.toggle('flipped');
+    }
+
+    function nextCard() {
+        if(currentCard < data.length - 1) {
+            currentCard++;
+            updateCard();
+        }
+    }
+
+    function prevCard() {
+        if(currentCard > 0) {
+            currentCard--;
+            updateCard();
+        }
+    }
+
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = '';
+        
+        data.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+            card.id = `q-card-${index}`;
+            
+            const question = document.createElement('h3');
+            question.textContent = `${index + 1}. ${item.q}`;
+            card.appendChild(question);
+
+            item.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => checkAnswer(btn, opt, item.a, index, item.q);
+                card.appendChild(btn);
+            });
+
+            container.appendChild(card);
+        });
+    }
+
+    function checkAnswer(btn, selected, correct, index, questionText) {
+        const parent = btn.parentElement;
+        const buttons = parent.querySelectorAll('.option-btn');
+        
+        buttons.forEach(b => {
+            b.disabled = true;
+            if(b.textContent === correct) {
+                b.classList.add('correct');
+            }
+        });
+
+        if(selected === correct) {
+             quizScore++;
+        } else {
+             btn.classList.add('incorrect');
+        }
+        
+        document.getElementById('score').textContent = quizScore;
+
+        // Add AI Explain Button dynamically
+        const explainBtn = document.createElement('button');
+        explainBtn.className = 'ai-btn';
+        explainBtn.innerText = '✨ Explain Answer';
+        explainBtn.onclick = () => explainQuizAnswer(explainBtn, questionText, selected, correct);
+        parent.appendChild(explainBtn);
+    }
+
+    function resetQuiz() {
+        quizScore = 0;
+        document.getElementById('score').textContent = 0;
+        shuffleArray(data);
+        currentCard = 0;
+        if(!document.getElementById('flashcard-mode').classList.contains('hidden')) {
+            updateCard();
+        }
+        renderQuiz();
+    }
+
+
+    // --- TEST MODE FUNCTIONS ---
+    function updateTestQuestion() {
+        const questionEl = document.getElementById('test-question');
+        const inputEl = document.getElementById('test-answer-input');
+        const feedbackEl = document.getElementById('test-feedback');
+        const currentEl = document.getElementById('test-current');
+        
+        questionEl.textContent = data[currentCard].q;
+        currentEl.textContent = currentCard + 1;
+        
+        // Clear input and feedback
+        inputEl.value = '';
+        feedbackEl.classList.add('hidden');
+        feedbackEl.className = 'hidden';
+        
+        // If this question was already answered, show the previous feedback
+        if(testAnswers[currentCard]) {
+            inputEl.value = testAnswers[currentCard].userAnswer;
+            showTestFeedback(testAnswers[currentCard].feedback, testAnswers[currentCard].isCorrect);
+        }
+    }
+
+    async function checkTestAnswer() {
+        const userAnswer = document.getElementById('test-answer-input').value.trim();
+        const correctAnswer = data[currentCard].a;
+        const question = data[currentCard].q;
+        const submitBtn = document.querySelector('#test-mode .submit-btn');
+        
+        if(!userAnswer) {
+            alert('Please type an answer first!');
+            return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Checking...';
+        
+        const feedbackEl = document.getElementById('test-feedback');
+        feedbackEl.classList.remove('hidden');
+        feedbackEl.className = 'feedback-box';
+        feedbackEl.innerHTML = '<span class="loading-dots">Consulting Yo Mama</span>';
+        
+        const prompt = `You are an engineering professor grading a student's answer. 
+
+Question: "${question}"
+Correct Answer: "${correctAnswer}"
+Student's Answer: "${userAnswer}"
+
+Evaluate if the student's answer is correct, partially correct, or incorrect. Respond in this exact format:
+
+VERDICT: [CORRECT/PARTIAL/INCORRECT]
+FEEDBACK: [Brief explanation of why the answer is right/wrong and what the correct answer should include]
+
+Be strict but fair. The student's answer doesn't need to match word-for-word, but should demonstrate understanding of the key concept.`;
+        
+        const result = await callGeminiAPI(prompt, false);
+        
+        if(result && result.candidates) {
+            const aiResponse = result.candidates[0].content.parts[0].text;
+            
+            // Parse the AI response
+            let isCorrect = 'partial';
+            if(aiResponse.includes('VERDICT: CORRECT')) {
+                isCorrect = 'correct';
+                // Only increment score if this question wasn't answered correctly before
+                if(!testAnswers[currentCard] || testAnswers[currentCard].isCorrect !== 'correct') {
+                    if(testAnswers[currentCard] && testAnswers[currentCard].isCorrect === 'partial') {
+                        testScore += 0.5; // Add the remaining 0.5
+                    } else {
+                        testScore += 1;
+                    }
+                }
+            } else if(aiResponse.includes('VERDICT: PARTIAL')) {
+                isCorrect = 'partial';
+                if(!testAnswers[currentCard]) {
+                    testScore += 0.5;
+                } else if(testAnswers[currentCard].isCorrect === 'correct') {
+                    testScore -= 0.5; // Deduct if they had it right before
+                }
+            } else {
+                isCorrect = 'incorrect';
+                // Deduct points if they had it right or partial before
+                if(testAnswers[currentCard]) {
+                    if(testAnswers[currentCard].isCorrect === 'correct') {
+                        testScore -= 1;
+                    } else if(testAnswers[currentCard].isCorrect === 'partial') {
+                        testScore -= 0.5;
+                    }
+                }
+            }
+            
+            // Extract feedback
+            const feedbackMatch = aiResponse.match(/FEEDBACK: (.+)/s);
+            const feedback = feedbackMatch ? feedbackMatch[1].trim() : aiResponse;
+            
+            // Store the answer
+            testAnswers[currentCard] = {
+                userAnswer: userAnswer,
+                isCorrect: isCorrect,
+                feedback: feedback
+            };
+            
+            // Update score display
+            document.getElementById('test-score').textContent = Math.max(0, testScore).toFixed(1);
+            
+            showTestFeedback(feedback, isCorrect);
+        } else {
+            feedbackEl.className = 'feedback-box incorrect';
+            feedbackEl.innerHTML = '❌ Error contacting AI. Please try again.';
+        }
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Answer';
+    }
+
+    function showTestFeedback(feedback, isCorrect) {
+        const feedbackEl = document.getElementById('test-feedback');
+        feedbackEl.classList.remove('hidden');
+        feedbackEl.className = `feedback-box ${isCorrect}`;
+        
+        let icon = '✅';
+        let title = 'Correct!';
+        if(isCorrect === 'incorrect') {
+            icon = '❌';
+            title = 'Incorrect';
+        } else if(isCorrect === 'partial') {
+            icon = '⚠️';
+            title = 'Partially Correct';
+        }
+        
+        feedbackEl.innerHTML = `<strong>${icon} ${title}</strong><br><br>${feedback}`;
+    }
+
+    function nextTestQuestion() {
+        if(currentCard < data.length - 1) {
+            currentCard++;
+            updateTestQuestion();
+        }
+    }
+
+    function prevTestQuestion() {
+        if(currentCard > 0) {
+            currentCard--;
+            updateTestQuestion();
+        }
+    }
+
+    function resetTest() {
+        testScore = 0;
+        testAnswers = [];
+        currentCard = 0;
+        document.getElementById('test-score').textContent = '0';
+        shuffleArray(data);
+        updateTestQuestion();
+    }
+
+    initApp();
+</script>
+
+</body>
+</html>

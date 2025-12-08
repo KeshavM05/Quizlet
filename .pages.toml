@@ -1,0 +1,11 @@
+# Cloudflare Pages configuration
+# This tells Cloudflare Pages how to build and deploy your site
+
+[build]
+# No build command needed - this is a static HTML site
+command = ""
+# The directory containing your built files (current directory)
+directory = "./"
+
+[build.environment]
+# No environment variables needed for build
