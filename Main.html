@@ -385,9 +385,12 @@
     <button class="control-btn" style="width:100%; margin-top:20px;" onclick="resetTest()">Restart Test</button>
 </main>
 
+<!-- Load API configuration -->
+<script src="config.js"></script>
+
 <script>
     // --- GEMINI API SETUP ---
-    const apiKey = "AIzaSyCJbaLgZO1MaNWBgZ6w7p58p1ebxe4cfiQ"; // Injected by environment
+    const apiKey = (typeof CONFIG !== 'undefined' && CONFIG.GEMINI_API_KEY) || ""; // Load from config.js
 
     // Helper: Delay for backoff
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
