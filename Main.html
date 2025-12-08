@@ -390,51 +390,60 @@
 
 <script>
     // --- GEMINI API SETUP ---
-    const apiKey = (typeof CONFIG !== 'undefined' && CONFIG.GEMINI_API_KEY) || ""; // Load from config.js
+    // Check if running locally (config.js exists) or in production (use serverless function)
+    const apiKey = (typeof CONFIG !== 'undefined' && CONFIG.GEMINI_API_KEY) || "";
+    const isProduction = !apiKey; // If no local API key, assume we're in production
 
     // Helper: Delay for backoff
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     // Helper: Generic API Call with Retries
     async function callGeminiAPI(prompt, isTTS = false) {
-        if (!apiKey) {
-            alert("API Key missing! The AI features won't work in this specific preview without a key.");
-            return null;
-        }
-
-        const model = isTTS ? "gemini-2.5-flash-preview-tts" : "gemini-2.5-flash-preview-09-2025";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        
-        let payload;
-        
-        if (isTTS) {
-             payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseModalities: ["AUDIO"],
-                    speechConfig: {
-                        voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: "Kore" }
-                        }
-                    }
-                }
-            };
-        } else {
-            payload = {
-                contents: [{ parts: [{ text: prompt }] }]
-            };
-        }
 
         // Exponential backoff: 1s, 2s, 4s, 8s, 16s
         const delays = [1000, 2000, 4000, 8000, 16000];
         
         for (let i = 0; i <= 5; i++) {
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                let response;
+                
+                if (isProduction) {
+                    // Production: Use Cloudflare Pages Function
+                    response = await fetch('/api/gemini', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, isTTS })
+                    });
+                } else {
+                    // Local development: Call Gemini API directly
+                    const model = isTTS ? "gemini-2.5-flash-preview-tts" : "gemini-2.5-flash-preview-09-2025";
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                    
+                    let payload;
+                    if (isTTS) {
+                        payload = {
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                responseModalities: ["AUDIO"],
+                                speechConfig: {
+                                    voiceConfig: {
+                                        prebuiltVoiceConfig: { voiceName: "Kore" }
+                                    }
+                                }
+                            }
+                        };
+                    } else {
+                        payload = {
+                            contents: [{ parts: [{ text: prompt }] }]
+                        };
+                    }
+                    
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
 
                 if (response.status === 429) {
                     if (i < 5) {
@@ -443,13 +452,19 @@
                     }
                 }
 
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("API Error:", errorData);
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 return data;
 
             } catch (error) {
                 if (i === 5) {
-                    console.error("Yo Mama API Error:", error);
+                    console.error("Gemini API Error:", error);
+                    alert("AI features are currently unavailable. Please try again later.");
                     return null;
                 }
             }
