@@ -48,37 +48,42 @@ cd Quizlet
 2. Create a new API key
 3. Add it to your `config.js` file
 
-### 4. Run the App
-Simply open `Main.html` in your web browser:
+### 4. Run the App Locally
+Simply open `index.html` in your web browser:
 ```bash
 # Windows
-start Main.html
+start index.html
 
 # Mac/Linux
-open Main.html
+open index.html
 ```
 
-## Deployment
+## Deployment to Cloudflare Pages
 
-### GitHub Pages
-1. Push your code to GitHub (API key won't be included due to `.gitignore`)
-2. Go to Settings → Pages
-3. Select your branch and save
-4. Add your API key using GitHub Secrets or environment variables
+This app is deployed at **[quizlet.keshavhq.com](https://quizlet.keshavhq.com/)**
 
-### Cloudflare Pages
-1. Connect your GitHub repository
-2. Deploy the site
-3. Add your API key as an environment variable in Cloudflare dashboard
+### Setup Instructions
+1. Push your code to GitHub
+2. Connect repository to Cloudflare Pages
+3. **Add environment variable** in Cloudflare Dashboard:
+   - Go to: Workers & Pages → quizlet → Settings → Environment variables
+   - Add: `GEMINI_API_KEY` = your Gemini API key
+   - See [`CLOUDFLARE_SETUP.md`](./CLOUDFLARE_SETUP.md) for detailed instructions
+
+The app uses a **Cloudflare Pages Function** (`/functions/api/gemini.js`) to securely proxy API calls, keeping your API key safe.
 
 ## File Structure
 ```
 Quizlet/
-├── Main.html           # Main application file
-├── config.js           # API key (gitignored, create from example)
-├── config.example.js   # Template for config.js
-├── .gitignore         # Prevents sensitive files from being committed
-└── README.md          # This file
+├── index.html              # Main application file (deployed)
+├── functions/
+│   └── api/
+│       └── gemini.js       # Serverless function for AI features
+├── config.js               # API key for local dev (gitignored)
+├── config.example.js       # Template for config.js
+├── CLOUDFLARE_SETUP.md     # Deployment setup guide
+├── .gitignore              # Prevents secrets from being committed
+└── README.md               # This file
 ```
 
 ## Technologies Used
