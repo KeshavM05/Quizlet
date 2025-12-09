@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MREN 318 Quizlet</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <!-- Markdown and Math Rendering Libraries -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
@@ -309,6 +314,27 @@
             border: 2px solid #f59e0b;
             color: #78350f;
         }
+
+        /* Rendered AI Content Styles */
+        .ai-response-box p, .feedback-box p {
+            margin: 0.5rem 0;
+        }
+        
+        .ai-response-box ul, .feedback-box ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        .ai-response-box code, .feedback-box code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        .ai-response-box .katex, .feedback-box .katex {
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
@@ -472,6 +498,51 @@
         }
     }
 
+
+    // Helper: Render markdown with LaTeX math
+    function renderMarkdown(text) {
+        // First, protect LaTeX expressions from markdown processing
+        const latexBlocks = [];
+        let processedText = text;
+        
+        // Extract display math ($$...$$)
+        processedText = processedText.replace(/\$\$([^\$]+)\$\$/g, (match, latex) => {
+            const placeholder = `__LATEX_BLOCK_${latexBlocks.length}__`;
+            latexBlocks.push({ type: 'display', latex: latex.trim() });
+            return placeholder;
+        });
+        
+        // Extract inline math ($...$)
+        processedText = processedText.replace(/\$([^\$]+)\$/g, (match, latex) => {
+            const placeholder = `__LATEX_INLINE_${latexBlocks.length}__`;
+            latexBlocks.push({ type: 'inline', latex: latex.trim() });
+            return placeholder;
+        });
+        
+        // Render markdown
+        let html = marked.parse(processedText);
+        
+        // Restore and render LaTeX
+        latexBlocks.forEach((item, index) => {
+            const placeholder = item.type === 'display' 
+                ? `__LATEX_BLOCK_${index}__` 
+                : `__LATEX_INLINE_${index}__`;
+            
+            try {
+                const rendered = katex.renderToString(item.latex, {
+                    displayMode: item.type === 'display',
+                    throwOnError: false
+                });
+                html = html.replace(placeholder, rendered);
+            } catch (e) {
+                console.error('KaTeX error:', e);
+                html = html.replace(placeholder, item.latex);
+            }
+        });
+        
+        return html;
+    }
+
     // Feature 1: TTS
     async function speakCard() {
         const text = data[currentCard].q + " ... The answer is ... " + data[currentCard].a;
@@ -522,7 +593,7 @@
         
         if (result && result.candidates) {
             const aiText = result.candidates[0].content.parts[0].text;
-            outputDiv.innerText = "✨ " + aiText;
+            outputDiv.innerHTML = renderMarkdown(aiText);
         } else {
             outputDiv.innerText = "Error contacting AI. Try again.";
         }
@@ -548,7 +619,7 @@
         const result = await callGeminiAPI(prompt, false);
 
         if (result && result.candidates) {
-            responseBox.innerText = "✨ " + result.candidates[0].content.parts[0].text;
+            responseBox.innerHTML = renderMarkdown(result.candidates[0].content.parts[0].text);
         } else {
             responseBox.innerText = "Could not retrieve explanation.";
         }
@@ -589,7 +660,7 @@
         { q: "What is a B-H curve?", a: "The nonlinear relationship between magnetic flux density and magnetic field intensity.", options: ["Shape of the stator.", "The nonlinear relationship between magnetic flux density and magnetic field intensity.", "Grading scheme.", "Windings chart."] },
         { q: "What is the magnetic equivalent of electric current in a circuit?", a: "Magnetic flux.", options: ["Magnetic current.", "Magnetomotive force.", "Permeability of free space.", "Magnetic flux."] },
         { q: "A coil with 500 turns carries a current of 0.2 A. What is the magnetomotive force (MMF)?", a: "100 A-t", options: ["4π A-t", "100 A-t", "2500 A-t", "0.4 A-t"] },
-        { q: "A wire is coiled around a rod of material (μr = 3). If the core is removed, what happens to the flux?", a: "It decreases by a factor of 3.", options: ["Increases by factor of 3.", "Remains the same.", "It decreases by a factor of 3.", "Becomes zero."] },
+        { q: "A wire is coiled around a rod of material (μ_r = 3). If the core is removed, what happens to the flux?", a: "It decreases by a factor of 3.", options: ["Increases by factor of 3.", "Remains the same.", "It decreases by a factor of 3.", "Becomes zero."] },
         { q: "Why is the reluctance of an air gap typically high?", a: "Air has low magnetic permeability.", options: ["Air has low magnetic permeability.", "Air has high conductivity.", "Air increases area.", "Fields cannot move through air."] },
         { q: "What is the goal of a generator?", a: "Convert mechanical energy into electrical energy.", options: ["Convert electrical to thermal.", "Convert electrical to mechanical.", "Convert mechanical energy into electrical energy.", "Store electrical energy."] },
         { q: "In a DC motor, what is the purpose of the commutator?", a: "To reverse the current direction in the armature windings.", options: ["Increase speed.", "Mechanical support.", "Reverse field direction.", "To reverse the current direction in the armature windings."] },
@@ -875,7 +946,7 @@ Be strict but fair. The student's answer doesn't need to match word-for-word, bu
             title = 'Partially Correct';
         }
         
-        feedbackEl.innerHTML = `<strong>${icon} ${title}</strong><br><br>${feedback}`;
+        feedbackEl.innerHTML = `<strong>${icon} ${title}</strong><br><br>` + renderMarkdown(feedback);
     }
 
     function nextTestQuestion() {
