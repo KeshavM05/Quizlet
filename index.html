@@ -930,7 +930,11 @@
             question.textContent = `${index + 1}. ${item.q}`;
             card.appendChild(question);
 
-            item.options.forEach(opt => {
+            // Shuffle options for this question
+            const shuffledOptions = [...item.options];
+            shuffleArray(shuffledOptions);
+
+            shuffledOptions.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.textContent = opt;
