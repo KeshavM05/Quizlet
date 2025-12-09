@@ -443,7 +443,7 @@
                     });
                 } else {
                     // Local development: Call Gemini API directly
-                    const model = isTTS ? "gemini-2.5-flash-preview-tts" : "gemini-2.5-flash-preview-09-2025";
+                    const model = isTTS ? "gemini-1.5-flash" : "gemini-1.5-flash";
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
                     
                     let payload;
@@ -562,14 +562,14 @@
             processed = processed.replace(/\$\$([\s\S]+?)\$\$/g, (match, latex) => {
                 const id = latexBlocks.length;
                 latexBlocks.push({ type: 'display', latex: latex.trim() });
-                return `___LATEX_BLOCK_${id}___`;
+                return `<!--LATEXBLOCK${id}-->`;
             });
             
             // Replace $...$ with placeholders (but not $$)
             processed = processed.replace(/\$([^\$\n]+?)\$/g, (match, latex) => {
                 const id = latexBlocks.length;
                 latexBlocks.push({ type: 'inline', latex: latex.trim() });
-                return `___LATEX_INLINE_${id}___`;
+                return `<!--LATEXINLINE${id}-->`;
             });
             
             // Render markdown
@@ -578,8 +578,8 @@
             // Render LaTeX blocks
             latexBlocks.forEach((item, index) => {
                 const placeholder = item.type === 'display' 
-                    ? `___LATEX_BLOCK_${index}___` 
-                    : `___LATEX_INLINE_${index}___`;
+                    ? `<!--LATEXBLOCK${index}-->` 
+                    : `<!--LATEXINLINE${index}-->`;
                 
                 try {
                     const rendered = katex.renderToString(item.latex, {
